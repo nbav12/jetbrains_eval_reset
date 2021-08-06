@@ -1,5 +1,5 @@
 # WebstormEvalReset
-This tool help you reset your free evaluation for Jetbrains Webstorm product  
+This tool helps you reset your free evaluation for Jetbrains Webstorm product  
 
 ## Getting Started
 To use the program, you can choose one of these options:
