@@ -1,4 +1,6 @@
+import time
 import os
+import sys
 import shutil
 import winreg
 import xml.etree.ElementTree as Et
@@ -52,6 +54,10 @@ def remove_eval_dirs(eval_dirs):
 def handle_eval(webstorm_dirs):
     print('\n[!] Eval dir')
     eval_dirs = find_eval_dirs(webstorm_dirs)
+
+    if not eval_dirs:
+        return print('[!] Can not find any eval dir. Skipping')
+
     remove_eval_dirs(eval_dirs)
 
 
@@ -97,6 +103,10 @@ def remove_xml_elements(options_dirs):
 def handle_xml(webstorm_dirs):
     print('\n[!] XML file')
     options_dirs = find_options_dirs(webstorm_dirs)
+
+    if not options_dirs:
+        print('[!] Can not find any options dir. Skipping')
+
     remove_xml_elements(options_dirs)
 
 
@@ -114,7 +124,9 @@ def handle_reg():
                     delete_sub_keys(sub_key)
                     print(f'[+] {sub_key_name} key has been removed')
     except FileNotFoundError:
-        print(f'[-] {WEBSTORM_REG_PATH} registry can not be found')
+        print(f'[!] {WEBSTORM_REG_PATH} registry can not be found. Skipping')
+    except PermissionError:
+        print(f'[-] There is not permission for {WEBSTORM_REG_PATH} registry ')
 
 
 def delete_sub_keys(key):
@@ -138,15 +150,69 @@ def delete_sub_keys(key):
     winreg.DeleteKey(key, '')
 
 
+def choose_webstorm_dir_manual():
+    from tkinter import filedialog, Tk
+
+    root = Tk()
+    root.withdraw()
+
+    webstorm_dir = filedialog.askdirectory(title='Choose Webstorm config folder')
+
+    if not webstorm_dir:
+        print('[!] No folder selected. Exiting')
+        close()
+
+    return webstorm_dir
+
+
+def choose_specific_webstorm_dir(webstorm_dirs):
+    print(f'[!] {len(webstorm_dirs)} dirs have been found.')
+    print('\tWhich of them do you want to reset?')
+
+    for i, directory in enumerate(webstorm_dirs):
+        print(f'\t\t{i + 1} - {directory}')
+    print(f'\t\t{i + 2} - All')
+
+    user_choose = input('\tYour choose: ')
+    while not is_valid_choose(user_choose, 1, len(webstorm_dirs) + 1):
+        user_choose = input('\tYour choose: ')
+
+    if int(user_choose) <= len(webstorm_dirs):
+        return [webstorm_dirs[int(user_choose) - 1]]
+
+    return webstorm_dirs
+
+
+def is_valid_choose(choose, min_value, max_value):
+    try:
+        user_choose = int(choose)
+
+        return min_value <= user_choose <= max_value
+    except ValueError:
+        return False
+
+
+def close():
+    os.system('pause')
+    sys.exit(0)
+
+
 def main():
     webstorm_dirs = find_webstorm_dirs()
+
+    if not webstorm_dirs:
+        print('[!] The Webstorm config dir can not be found. Please choose it manually')
+        time.sleep(2)
+        webstorm_dirs.append(choose_webstorm_dir_manual())
+    elif len(webstorm_dirs) > 1:
+        webstorm_dirs = choose_specific_webstorm_dir(webstorm_dirs)
 
     handle_eval(webstorm_dirs)
     handle_xml(webstorm_dirs)
     handle_reg()
 
     print('\n[!] Done!')
-    os.system('pause')
+    close()
 
 
 if __name__ == '__main__':
